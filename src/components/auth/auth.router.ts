@@ -4,7 +4,7 @@ import authMiddlewares from '@/middlewares/auth'
 
 const router = express.Router()
 
-router.post('/teacher/login', authControllers.login)
+router.post('/login', authControllers.login)
 router.get('/teacher/logout', authMiddlewares.checkAuth, authControllers.logout)
 router.get('/is-in', authControllers.isIn)
 

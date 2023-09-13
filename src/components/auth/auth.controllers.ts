@@ -8,23 +8,21 @@ import ApiError from '@/utils/ApiError'
 import logger from '@/utils/logger'
 
 const login = catchAsync(async (req: Req, res: Res) => {
-  const validation = loginSchema.validate(req.body)
+  // const validation = loginSchema.validate(req.body)
 
-  if (validation.error) {
-    throw new ApiError(
-      400,
-      'Invalid request body',
-      null,
-      validation.error.details
-    )
-  }
+  // if (validation.error) {
+  //   throw new ApiError(
+  //     400,
+  //     'Invalid request body',
+  //     null,
+  //     validation.error.details
+  //   )
+  // }
 
   const data = await authervice.login(req.body)
 
   req.session.user = {
-    teacherId: data.teacherId,
-    email: data.email,
-    teacherRole: data.role
+    email: data.email
   }
 
   res.send({
@@ -44,27 +42,33 @@ const logout = catchAsync(async (req: Req, res: Res) => {
 })
 
 const isIn = catchAsync(async (req: Req, res: Res) => {
-  const { teacherId, socketId } = req.session.user
+  try {
+    const { email } = req.session.user
 
-  // if teacher get the email
-  // if (teacherId) {
-  //   const teacher = await authervice.getTeacherById(teacherId)
+    // if teacher get the email
+    // if (teacherId) {
+    //   const teacher = await authervice.getTeacherById(teacherId)
 
-  //   if (!teacher) {
-  //     throw new ApiError(401, 'Teacher not found')
-  //   }
+    //   if (!teacher) {
+    //     throw new ApiError(401, 'Teacher not found')
+    //   }
 
-  //   res.send({
-  //     role: 'teacher',
-  //     email: teacher.email,
-  //     name: teacher.name,
-  //     socketId
-  //   })
-  // }
+    //   res.send({
+    //     role: 'teacher',
+    //     email: teacher.email,
+    //     name: teacher.name,
+    //     socketId
+    //   })
+    // }
 
-  res.send({
-    socketId
-  })
+    res.send({
+      isIn: !!email
+    })
+  } catch (error) {
+    res.status(401).send({
+      isIn: false
+    })
+  }
 })
 
 export default {
