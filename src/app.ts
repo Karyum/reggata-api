@@ -61,7 +61,6 @@ socket.use((socket, next) => {
   ) {
     next()
   } else {
-    console.log('Not allowed socket')
     next(new ApiError(httpStatus.UNAUTHORIZED, 'Unauthorized'))
   }
 })
@@ -92,12 +91,7 @@ app.use(
 //   })
 // )
 
-app.use(
-  helmet({
-    // we needed to add this, so that the iframe for documents would work
-    contentSecurityPolicy: false
-  })
-)
+app.use(helmet())
 
 app.use(compression())
 app.use(express.json({ limit: '10mb' }))
@@ -107,6 +101,7 @@ app.use(sessionMiddleware)
 
 app.use('/api/auth', routers.auth)
 app.use('/api/general', routers.general)
+app.use('/api/patients', routers.patients)
 
 app.use((req, res, next) => {
   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'))
