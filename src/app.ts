@@ -77,7 +77,7 @@ app.set('trust proxy', 1)
 
 app.use(
   cors({
-    origin: ['http://localhost:3009', 'https://lpad-client.vercel.app'],
+    origin: ['http://localhost:3009', 'https://sunflower-clinic.vercel.app'],
     credentials: true
   })
 )
