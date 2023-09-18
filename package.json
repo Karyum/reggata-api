@@ -29,6 +29,7 @@
         "tslib": "^2.6.2"
     },
     "dependencies": {
+        "@karyum/express-session": "^1.17.5",
         "@types/express": "^4.17.13",
         "axios": "^0.27.2",
         "bcrypt": "^5.0.1",

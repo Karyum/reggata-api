@@ -26,7 +26,8 @@ const login = catchAsync(async (req: Req, res: Res) => {
   }
 
   res.send({
-    message: 'Logged in'
+    message: 'Logged in',
+    token: (req.token && req.token[0]) || ''
   })
 })
 

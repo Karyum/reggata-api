@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit'
 import compression from 'compression'
 import httpStatus from 'http-status'
 import session from 'express-session'
+import karyumSession from '@karyum/express-session'
 import db from '@db'
 import knexSessionConnect from 'connect-session-knex'
 import path from 'path'
@@ -17,6 +18,7 @@ import routers from './components'
 import ApiError from './utils/ApiError'
 import { environment, isDev, selfUrl } from './config'
 import { io } from 'socket.io-client'
+import logger from './utils/logger'
 
 const app = express()
 const server = http.createServer(app)
@@ -26,28 +28,30 @@ const KnexSessionStore = knexSessionConnect(session)
 const sessionStore = new KnexSessionStore({
   knex: db,
   tablename: 'sessions',
-  createtable: true,
-  clearInterval: 1000 * 60 * 60 * 24 * 7 // delete expired sessions every 7 days
+  createtable: true
+  //   clearInterval: 1000 * 60 * 60 * 24 * 7 // delete expired sessions every 7 days
 })
 
 // FUTURE:
 // one solution to have 2 users on same browser is use my own session store package @karyum/express-session
 // and then just have a token saved in SessionStorage on the client for each user
-const sessionMiddleware = session({
+const sessionMiddleware = karyumSession({
   secret: process.env.SESSION_SECRET,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    sameSite: environment === 'production' ? 'none' : 'lax',
-    secure: environment === 'production'
-  },
+  //   cookie: {
+  //     maxAge: 1000 * 60 * 60 * 24 * 7,
+  //     sameSite: environment === 'production' ? 'none' : 'lax',
+  //     secure: environment === 'production'
+  //   },
   store: sessionStore,
+  shouldReplaceCookieWithToken: true,
   resave: false,
   saveUninitialized: false
 })
 
 // convert a connect middleware to a Socket.IO middleware
-const wrap = (middleware) => (socket, next) =>
-  middleware(socket.request, {}, next)
+const wrap = (middleware) => (socket, next) => {
+  return middleware(socket.request, { getHeader: () => 1 }, next)
+}
 
 socket.use(wrap(sessionMiddleware))
 

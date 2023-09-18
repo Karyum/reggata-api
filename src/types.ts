@@ -9,6 +9,7 @@ export interface ISessionObj {
 }
 
 export interface Req extends Request {
+  token: any
   session: {
     user: ISessionObj
     destroy?: Function
