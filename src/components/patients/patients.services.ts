@@ -6,10 +6,29 @@ interface IPatient {
   phone: string
   maritalStatus: string
   intake: any // for now
+  gender: string
+  id?: number
 }
 
 const addPatient = async (data: IPatient) => {
-  const { name, age, phone, maritalStatus, intake } = data
+  const { name, age, phone, maritalStatus, gender, intake, id } = data
+
+  if (id) {
+    // update the patient
+    const patient = await db('patients')
+      .where({ id })
+      .update({
+        name,
+        age,
+        phone,
+        maritalStatus,
+        gender,
+        intakeForm: JSON.stringify(intake)
+      })
+      .returning('*')
+
+    return patient[0]
+  }
 
   const patient = await db('patients')
     .insert({
@@ -17,6 +36,7 @@ const addPatient = async (data: IPatient) => {
       age,
       phone,
       maritalStatus,
+      gender,
       intakeForm: JSON.stringify(intake)
     })
     .returning('*')
@@ -42,8 +62,29 @@ const getPatient = async (id: string) => {
   return patient
 }
 
+const getPatients = async () => {
+  const patientsRaw = await db('patients')
+    .columns({
+      id: 'patients.id',
+      name: 'patients.name',
+      age: 'patients.age',
+      phone: 'patients.phone',
+      intakeForm: 'intakeForm'
+    })
+    .select()
+    .orderBy('id', 'desc')
+
+  const patients = patientsRaw.map((patient: any) => ({
+    ...patient,
+    problem: patient.intakeForm?.problem || ''
+  }))
+
+  return patients
+}
+
 export default {
   addPatient,
   addPatientNotes,
-  getPatient
+  getPatient,
+  getPatients
 }

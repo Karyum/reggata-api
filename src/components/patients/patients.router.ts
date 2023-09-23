@@ -7,7 +7,7 @@ const router = express.Router()
 router.use(authMiddlewares.checkAuth)
 
 router.post('/', patientsControllers.addPatient)
-
 router.get('/:id', patientsControllers.getPatient)
+router.get('/', patientsControllers.getPatients)
 
 export default router
