@@ -101,7 +101,7 @@ const addSession = async (data: any) => {
 const fetchSessions = async (startDate: string, endDate: string) => {
   const sessions = await db('patients_sessions')
     .whereBetween('date', [startDate, endDate])
-    .join('patients', 'patients.id', '=', 'patients_sessions.patient_id')
+    .leftJoin('patients', 'patients.id', '=', 'patients_sessions.patient_id')
     .columns({
       date: 'patients_sessions.date',
       description: 'patients_sessions.description',
