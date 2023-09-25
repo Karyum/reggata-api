@@ -82,9 +82,44 @@ const getPatients = async () => {
   return patients
 }
 
+const addSession = async (data: any) => {
+  const { patientId, time, date, description, type } = data
+
+  const session = await db('patients_sessions')
+    .insert({
+      patient_id: patientId,
+      time,
+      date,
+      type,
+      description
+    })
+    .returning('*')
+
+  return session[0]
+}
+
+const fetchSessions = async (startDate: string, endDate: string) => {
+  const sessions = await db('patients_sessions')
+    .whereBetween('date', [startDate, endDate])
+    .join('patients', 'patients.id', '=', 'patients_sessions.patient_id')
+    .columns({
+      date: 'patients_sessions.date',
+      description: 'patients_sessions.description',
+      name: 'patients.name',
+      patientId: 'patients.id',
+      time: 'patients_sessions.time',
+      type: 'patients_sessions.type'
+    })
+    .select()
+
+  return sessions
+}
+
 export default {
   addPatient,
   addPatientNotes,
   getPatient,
-  getPatients
+  getPatients,
+  addSession,
+  fetchSessions
 }

@@ -45,8 +45,38 @@ const getPatients = catchAsync(async (req: Req, res: Res) => {
   res.send(patients)
 })
 
+const addSession = catchAsync(async (req: Req, res: Res) => {
+  const { patientId, time, date, description, type } = req.body
+
+  const session = await patientsService.addSession({
+    patientId,
+    time,
+    date,
+    type,
+    description
+  })
+
+  res.send({
+    success: true,
+    session
+  })
+})
+
+const fetchSessions = catchAsync(async (req: Req, res: Res) => {
+  const { startDate, endDate } = req.body
+
+  const sessions = await patientsService.fetchSessions(startDate, endDate)
+
+  res.send({
+    success: true,
+    sessions
+  })
+})
+
 export default {
   addPatient,
   getPatient,
-  getPatients
+  getPatients,
+  addSession,
+  fetchSessions
 }
