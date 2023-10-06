@@ -64,7 +64,8 @@ const getPatient = async (id: string) => {
   patient.user = {
     name: patientUser?.name,
     email: patientUser?.email,
-    userId: patientUser?.id
+    userId: patientUser?.id,
+    hasAccess: patientUser?.access
   }
 
   return patient
@@ -171,6 +172,14 @@ const revokeAccess = async (patientId: number) => {
   return true
 }
 
+const enactAccess = async (patientId: number) => {
+  await db('users').where({ patient_id: patientId }).update({
+    access: true
+  })
+
+  return true
+}
+
 export default {
   addPatient,
   addPatientNotes,
@@ -179,5 +188,6 @@ export default {
   addSession,
   fetchSessions,
   addUserToPatient,
-  revokeAccess
+  revokeAccess,
+  enactAccess
 }

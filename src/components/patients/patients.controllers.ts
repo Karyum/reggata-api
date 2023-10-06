@@ -99,6 +99,16 @@ const revokeAccess = catchAsync(async (req: Req, res: Res) => {
   })
 })
 
+const enactAccess = catchAsync(async (req: Req, res: Res) => {
+  const { patientId } = req.body
+
+  await patientsService.enactAccess(patientId)
+
+  res.send({
+    success: true
+  })
+})
+
 export default {
   addPatient,
   getPatient,
@@ -106,5 +116,6 @@ export default {
   addSession,
   fetchSessions,
   addUserToPatient,
-  revokeAccess
+  revokeAccess,
+  enactAccess
 }
