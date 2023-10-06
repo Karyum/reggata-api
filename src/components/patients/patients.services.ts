@@ -1,4 +1,5 @@
 import db from '@db'
+import bcrypt from 'bcrypt'
 
 interface IPatient {
   name: string
@@ -57,7 +58,14 @@ const getPatient = async (id: string) => {
   // get the notes of the patient
   const notes = await db('patient_notes').where({ patientId: id })
 
+  const patientUser = await db('users').where({ patient_id: id }).first()
+
   patient.notes = notes
+  patient.user = {
+    name: patientUser?.name,
+    email: patientUser?.email,
+    userId: patientUser?.id
+  }
 
   return patient
 }
@@ -115,11 +123,61 @@ const fetchSessions = async (startDate: string, endDate: string) => {
   return sessions
 }
 
+const addUserToPatient = async ({
+  patientId,
+  name,
+  username,
+  password
+}: {
+  patientId: number
+  name: string
+  username: string
+  password: string
+}) => {
+  // first check that the patient_id does not already exist in the users table
+  // or that the username does not already exist
+  const patient = await db('users')
+    .where({ patient_id: patientId })
+    .orWhere({ email: username })
+    .first()
+
+  if (patient) {
+    // if yes allow access
+    await db('users').where({ patient_id: patientId }).update({
+      access: true
+    })
+
+    return true
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10)
+
+  // add the patient to the users table
+  await db('users').insert({
+    name,
+    email: username,
+    password: hashedPassword,
+    patient_id: patientId
+  })
+
+  return true
+}
+
+const revokeAccess = async (patientId: number) => {
+  await db('users').where({ patient_id: patientId }).update({
+    access: false
+  })
+
+  return true
+}
+
 export default {
   addPatient,
   addPatientNotes,
   getPatient,
   getPatients,
   addSession,
-  fetchSessions
+  fetchSessions,
+  addUserToPatient,
+  revokeAccess
 }

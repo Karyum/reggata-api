@@ -73,10 +73,38 @@ const fetchSessions = catchAsync(async (req: Req, res: Res) => {
   })
 })
 
+const addUserToPatient = catchAsync(async (req: Req, res: Res) => {
+  const { patientId, name, username, password } = req.body
+
+  const patient = await patientsService.addUserToPatient({
+    patientId,
+    name,
+    username,
+    password
+  })
+
+  res.send({
+    success: true,
+    patient
+  })
+})
+
+const revokeAccess = catchAsync(async (req: Req, res: Res) => {
+  const { patientId } = req.body
+
+  await patientsService.revokeAccess(patientId)
+
+  res.send({
+    success: true
+  })
+})
+
 export default {
   addPatient,
   getPatient,
   getPatients,
   addSession,
-  fetchSessions
+  fetchSessions,
+  addUserToPatient,
+  revokeAccess
 }

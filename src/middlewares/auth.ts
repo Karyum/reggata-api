@@ -11,6 +11,13 @@ const checkAuth = catchAsync((req: Req, res: Res, next: Next) => {
   }
 })
 
+const isAdmin = catchAsync((req: Req, res: Res, next: Next) => {
+  if (req.session.user.role === 'admin') {
+    next()
+  }
+})
+
 export default {
-  checkAuth
+  checkAuth,
+  isAdmin
 }

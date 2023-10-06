@@ -22,12 +22,14 @@ const login = catchAsync(async (req: Req, res: Res) => {
   const data = await authervice.login(req.body)
 
   req.session.user = {
-    email: data.email
+    email: data.email,
+    role: data.email === 'saboha' ? 'admin' : 'user'
   }
 
   res.send({
     message: 'Logged in',
-    token: (req.token && req.token[0]) || ''
+    token: (req.token && req.token[0]) || '',
+    role: data.email === 'saboha' ? 'admin' : 'user'
   })
 })
 

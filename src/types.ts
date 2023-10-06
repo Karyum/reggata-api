@@ -5,7 +5,7 @@ export interface ISessionObj {
   studentId?: number
   email?: string
   socketId?: string
-  teacherRole?: boolean
+  role?: string
 }
 
 export interface Req extends Request {
