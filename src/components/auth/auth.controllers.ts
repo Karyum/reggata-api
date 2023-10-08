@@ -21,6 +21,10 @@ const login = catchAsync(async (req: Req, res: Res) => {
 
   const data = await authervice.login(req.body)
 
+  if (!data.access) {
+    throw new ApiError(401, 'You do not have access')
+  }
+
   req.session.user = {
     email: data.email,
     role: data.email === 'saboha' ? 'admin' : 'user',

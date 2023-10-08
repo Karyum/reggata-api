@@ -107,11 +107,35 @@ const addSession = async (data: any) => {
   return session[0]
 }
 
+const updateSession = async (data: any) => {
+  const { patientId, time, date, description, type, sessionId } = data
+
+  const session = await db('patients_sessions')
+    .where({ id: sessionId })
+    .update({
+      patient_id: patientId,
+      time,
+      date,
+      type,
+      description
+    })
+    .returning('*')
+
+  return session[0]
+}
+
+const deleteSession = async (sessionId: number) => {
+  await db('patients_sessions').where({ id: sessionId }).del()
+
+  return true
+}
+
 const fetchSessions = async (startDate: string, endDate: string) => {
   const sessions = await db('patients_sessions')
     .whereBetween('date', [startDate, endDate])
     .leftJoin('patients', 'patients.id', '=', 'patients_sessions.patient_id')
     .columns({
+      id: 'patients_sessions.id',
       date: 'patients_sessions.date',
       description: 'patients_sessions.description',
       name: 'patients.name',
@@ -189,5 +213,7 @@ export default {
   fetchSessions,
   addUserToPatient,
   revokeAccess,
-  enactAccess
+  enactAccess,
+  updateSession,
+  deleteSession
 }

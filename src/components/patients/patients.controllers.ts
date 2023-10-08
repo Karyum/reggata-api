@@ -109,6 +109,34 @@ const enactAccess = catchAsync(async (req: Req, res: Res) => {
   })
 })
 
+const updateSession = catchAsync(async (req: Req, res: Res) => {
+  const { patientId, time, date, description, type, sessionId } = req.body
+
+  const session = await patientsService.updateSession({
+    patientId,
+    time,
+    date,
+    type,
+    description,
+    sessionId
+  })
+
+  res.send({
+    success: true,
+    session
+  })
+})
+
+const deleteSession = catchAsync(async (req: Req, res: Res) => {
+  const { sessionId } = req.params
+
+  await patientsService.deleteSession(+sessionId)
+
+  res.send({
+    success: true
+  })
+})
+
 export default {
   addPatient,
   getPatient,
@@ -117,5 +145,7 @@ export default {
   fetchSessions,
   addUserToPatient,
   revokeAccess,
-  enactAccess
+  enactAccess,
+  updateSession,
+  deleteSession
 }
