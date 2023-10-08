@@ -60,6 +60,13 @@ const getPatient = async (id: string) => {
 
   const patientUser = await db('users').where({ patient_id: id }).first()
 
+  const patientSituationDiary = await db('patients_situation_diary')
+    .where({
+      patient_id: id
+    })
+    .orderBy('created_at', 'desc')
+    .select()
+
   patient.notes = notes
   patient.user = {
     name: patientUser?.name,
@@ -67,6 +74,8 @@ const getPatient = async (id: string) => {
     userId: patientUser?.id,
     hasAccess: patientUser?.access
   }
+
+  patient.situationDiary = patientSituationDiary
 
   return patient
 }
