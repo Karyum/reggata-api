@@ -23,7 +23,8 @@ const login = catchAsync(async (req: Req, res: Res) => {
 
   req.session.user = {
     email: data.email,
-    role: data.email === 'saboha' ? 'admin' : 'user'
+    role: data.email === 'saboha' ? 'admin' : 'user',
+    patientId: data.patient_id
   }
 
   res.send({

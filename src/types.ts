@@ -1,11 +1,10 @@
 import { NextFunction, Request, Response } from 'express'
 
 export interface ISessionObj {
-  teacherId?: number
-  studentId?: number
   email?: string
   socketId?: string
   role?: string
+  patientId?: string
 }
 
 export interface Req extends Request {
