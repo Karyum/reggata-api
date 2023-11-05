@@ -8,4 +8,6 @@ router.use(authMiddlewares.checkAuth)
 
 router.post('/save-situation-diary', patientUserControllers.saveSituationDiary)
 
+router.post('/save-anxiety-survey', patientUserControllers.saveAnxietySurvey)
+
 export default router

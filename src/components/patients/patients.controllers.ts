@@ -137,6 +137,27 @@ const deleteSession = catchAsync(async (req: Req, res: Res) => {
   })
 })
 
+const addNote = catchAsync(async (req: Req, res: Res) => {
+  const { patientId, note } = req.body
+
+  await patientsService.addPatientNotes(patientId, note)
+
+  res.send({
+    success: true
+  })
+})
+
+const getSurveyResults = catchAsync(async (req: Req, res: Res) => {
+  const { patientId, surveyName } = req.params
+
+  const results = await patientsService.getSurveyResults(+patientId, surveyName)
+
+  res.send({
+    success: true,
+    results
+  })
+})
+
 export default {
   addPatient,
   getPatient,
@@ -147,5 +168,7 @@ export default {
   revokeAccess,
   enactAccess,
   updateSession,
-  deleteSession
+  deleteSession,
+  addNote,
+  getSurveyResults
 }

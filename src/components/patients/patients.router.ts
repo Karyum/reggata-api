@@ -17,5 +17,10 @@ router.post('/sessions/fetch', patientsControllers.fetchSessions)
 router.post('/add-user', patientsControllers.addUserToPatient)
 router.post('/revoke-access', patientsControllers.revokeAccess)
 router.post('/enact-access', patientsControllers.enactAccess)
+router.post('/new-note', patientsControllers.addNote)
+router.get(
+  '/survey-results/:patientId/:surveyName',
+  patientsControllers.getSurveyResults
+)
 
 export default router

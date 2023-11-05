@@ -213,6 +213,14 @@ const enactAccess = async (patientId: number) => {
   return true
 }
 
+const getSurveyResults = async (patientId: number, surveyName: string) => {
+  const results = await db('patients_surveys')
+    .where({ patient_id: patientId, survey_name: surveyName })
+    .select()
+
+  return results
+}
+
 export default {
   addPatient,
   addPatientNotes,
@@ -224,5 +232,6 @@ export default {
   revokeAccess,
   enactAccess,
   updateSession,
-  deleteSession
+  deleteSession,
+  getSurveyResults
 }
