@@ -21,15 +21,15 @@ const saveSituationDiary = catchAsync(async (req: Req, res: Res) => {
   })
 })
 
-const saveAnxietySurvey = catchAsync(async (req: Req, res: Res) => {
-  const { answers, score } = req.body
+const saveSurvey = catchAsync(async (req: Req, res: Res) => {
+  const { answers, score, surveyName } = req.body
   const { patientId } = req.session.user
 
-  await patientUserService.saveAnxietySurvey({
+  await patientUserService.saveSurvey({
     patientId,
     answers,
     score,
-    surveyName: 'anxiety-survey'
+    surveyName
   })
 
   res.send({
@@ -40,5 +40,5 @@ const saveAnxietySurvey = catchAsync(async (req: Req, res: Res) => {
 
 export default {
   saveSituationDiary,
-  saveAnxietySurvey
+  saveSurvey
 }

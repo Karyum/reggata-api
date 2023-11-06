@@ -20,12 +20,7 @@ const saveSituationDiary = async ({
   return true
 }
 
-const saveAnxietySurvey = async ({
-  patientId,
-  answers,
-  score,
-  surveyName
-}: any) => {
+const saveSurvey = async ({ patientId, answers, score, surveyName }: any) => {
   await db('patients_surveys').insert({
     patient_id: patientId,
     answers: JSON.stringify(answers),
@@ -38,5 +33,5 @@ const saveAnxietySurvey = async ({
 
 export default {
   saveSituationDiary,
-  saveAnxietySurvey
+  saveSurvey
 }
