@@ -1,5 +1,5 @@
 {
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "**/*.hbs"],
   "exclude": ["node_modules", "./dist/**/*"],
   "compilerOptions": {
     "types": ["node"],
