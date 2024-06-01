@@ -7,7 +7,7 @@
     "dev": "NODE_ENV=development ts-node-dev src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "postinstall": "tsc",
+    "postinstall": "tsc && npm run postbuild",
     "postbuild": "cp -r src/views dist/views",
     "test": "NODE_ENV=test jest --detectOpenHandles",
     "reset:db": "npm run rollback:db && npm run migrate:lts:db && npm run seed:db",
