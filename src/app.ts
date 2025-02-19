@@ -2,7 +2,6 @@ import express from 'express'
 import http from 'http'
 import cors from 'cors'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
 import compression from 'compression'
 import httpStatus from 'http-status'
 import session from 'express-session'
@@ -103,10 +102,7 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }))
 
 app.use(sessionMiddleware)
 
-app.use('/api/auth', routers.auth)
 app.use('/api/general', routers.general)
-app.use('/api/patients', routers.patients)
-app.use('/api/patient-user', routers.patientUser)
 
 app.use((req, res, next) => {
   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'))

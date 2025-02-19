@@ -1,5 +1,3 @@
-import db from '@db'
-
 let serverHasConnected = false
 
 export default (io) => {

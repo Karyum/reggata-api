@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 dotenv.config({ path: '../../.env' })
 
-import { databaseConf, testingDatabaseConf } from '../config'
+import { databaseConf } from '../config'
 
 const commonConnection = {
   host: databaseConf.host,
@@ -33,18 +33,6 @@ const knexConfig = {
     },
     migrations: {
       tableName: 'knex_migrations'
-    }
-  },
-
-  test: {
-    client: 'pg',
-    connection: testingDatabaseConf,
-    migrations: {
-      directory: __dirname + '/migrations',
-      tableName: 'knex_migrations'
-    },
-    seeds: {
-      directory: __dirname + '/seeds'
     }
   }
 }
