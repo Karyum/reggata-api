@@ -27,20 +27,12 @@ const KnexSessionStore = knexSessionConnect(session)
 const sessionStore = new KnexSessionStore({
   knex: db,
   tablename: 'sessions',
-  createtable: true
-  //   clearInterval: 1000 * 60 * 60 * 24 * 7 // delete expired sessions every 7 days
+  createtable: true,
+  clearInterval: 1000 * 60 * 60 * 24 // delete expired sessions every 7 days,
 })
 
-// FUTURE:
-// one solution to have 2 users on same browser is use my own session store package @karyum/express-session
-// and then just have a token saved in SessionStorage on the client for each user
 const sessionMiddleware = karyumSession({
   secret: process.env.SESSION_SECRET,
-  //   cookie: {
-  //     maxAge: 1000 * 60 * 60 * 24 * 7,
-  //     sameSite: environment === 'production' ? 'none' : 'lax',
-  //     secure: environment === 'production'
-  //   },
   store: sessionStore,
   shouldReplaceCookieWithToken: true,
   resave: false,
@@ -49,24 +41,13 @@ const sessionMiddleware = karyumSession({
 
 // convert a connect middleware to a Socket.IO middleware
 const wrap = (middleware) => (socket, next) => {
+  // to the request object add Authorization header with the token
+  socket.request.headers.authorization = `${socket.handshake.query['token']}`
+
   return middleware(socket.request, { getHeader: () => 1 }, next)
 }
 
 socket.use(wrap(sessionMiddleware))
-
-// only allow authenticated users
-socket.use((socket, next) => {
-  const session = socket.request.session.user
-
-  if (
-    (session && (session.teacherId || session.studentId)) ||
-    socket.handshake.query.isServer
-  ) {
-    next()
-  } else {
-    next(new ApiError(httpStatus.UNAUTHORIZED, 'Unauthorized'))
-  }
-})
 
 socketManager(socket)
 
@@ -80,7 +61,7 @@ app.set('trust proxy', 1)
 
 app.use(
   cors({
-    origin: ['http://localhost:3009', 'https://sunflower-clinic.vercel.app'],
+    origin: ['http://localhost:3000'],
     credentials: true
   })
 )
