@@ -13,7 +13,7 @@ const errorStackTracerFormat = winston.format((info) => {
 })
 
 const logger = createLogger({
-  defaultMeta: { server: 'lpad-api' },
+  defaultMeta: { server: 'reggata' },
   format: combine(errorStackTracerFormat(), timestamp(), prettyPrint()),
   transports: [
     new transports.File({ filename: 'logs/error.log', level: 'error' }),
