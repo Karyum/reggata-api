@@ -2,7 +2,7 @@ import { serverSocket } from '@/app'
 import { colors, initialBoard } from '@/constants'
 import db from '@db'
 
-const createMatch = async (color: string, hostId) => {
+const createMatch = async (color: string, hostId: string) => {
   const match = await db('matches')
     .where('host_id', hostId)
     .where('guest_id', null)

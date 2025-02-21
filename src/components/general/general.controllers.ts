@@ -12,11 +12,18 @@ const connect = catchAsync(async (req: Req, res: Res) => {
   if (req.session.user) {
     return res.send({
       status: 'success',
-      token: (req.token && req.token[0]) || ''
+      authtoken: (req.token && req.token[0]) || ''
     })
   }
 
   req.session.user = { id: uuidv4() }
+
+  if (!req.token) {
+    return res.send({
+      status: 'success',
+      removeLocalAuthToken: true
+    })
+  }
 
   return res.send({
     status: 'success',
