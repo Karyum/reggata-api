@@ -29,6 +29,7 @@ export default (io) => {
     })
 
     socket.on('server:flip', (data: { coins: number; socketId: string }) => {
+      console.log('flip 2', data.socketId)
       io.to(data.socketId).emit('client:flip', {
         coins: data.coins
       })

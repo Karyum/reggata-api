@@ -88,6 +88,8 @@ const flip = catchAsync(async (req: Req, res: Res) => {
   const { coins } = req.body
   const user = req.session.user
 
+  console.log('flip')
+
   const match = await generalService.getMatch(matchId)
 
   if (!match) {
