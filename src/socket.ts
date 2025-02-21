@@ -29,17 +29,46 @@ export default (io) => {
     })
 
     socket.on('server:flip', (data: { coins: number; socketId: string }) => {
-      console.log('flip 2', data.socketId)
       io.to(data.socketId).emit('client:flip', {
         coins: data.coins
       })
     })
 
-    socket.on('server:turn-changed', (data: { socketIds: string[] }) => {
-      data.socketIds.forEach((socketId) => {
-        io.to(socketId).emit('client:turn-changed')
-      })
-    })
+    socket.on(
+      'server:turn-changed',
+      (data: {
+        socketIds: string[]
+        turn: string
+        toAnimation: string
+        fromAnimation: string
+        toAnimationSteps: string[]
+        color: string
+      }) => {
+        data.socketIds.forEach((socketId, i) => {
+          if (i === 0 && data.turn === 'host') {
+            io.to(socketId).emit('client:turn-changed', {
+              toAnimation: data.toAnimation,
+              fromAnimation: data.fromAnimation,
+              toAnimationSteps: data.toAnimationSteps,
+              color: data.color
+            })
+            return
+          }
+
+          if (i === 1 && data.turn === 'guest') {
+            io.to(socketId).emit('client:turn-changed', {
+              toAnimation: data.toAnimation,
+              fromAnimation: data.fromAnimation,
+              toAnimationSteps: data.toAnimationSteps,
+              color: data.color
+            })
+            return
+          }
+
+          io.to(socketId).emit('client:turn-changed')
+        })
+      }
+    )
 
     socket.on('server:reroll', (data: { socketId: string }) => {
       io.to(data.socketId).emit('client:reroll')
@@ -55,7 +84,6 @@ export default (io) => {
     )
 
     socket.on('server:reset', (data: { socketIds: string[] }) => {
-      console.log(1)
       data.socketIds.forEach((socketId) => {
         io.to(socketId).emit('client:reset')
       })

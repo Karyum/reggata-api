@@ -22,7 +22,11 @@ const createMatch = async (color: string, hostId) => {
       host_id: hostId,
       board_data: JSON.stringify(initialBoard),
       guest_board_data: JSON.stringify(initialBoard),
-      turn: 'host'
+      turn: 'host',
+      host_tokens_home: 1,
+      guest_tokens_home: 1,
+      host_tokens_reached: 0,
+      guest_tokens_reached: 0
     })
     .returning('*')
 
@@ -119,7 +123,11 @@ const getSockets = async (userIds) => {
   return sessions.map((session) => session.sess.user.socketId)
 }
 
-const endTurn = async (matchId) => {
+const endTurn = async (
+  matchId,
+  reroll: boolean = false,
+  animationData?: any
+) => {
   const match = await db('matches')
     .where('id', matchId)
     .columns({
@@ -132,18 +140,26 @@ const endTurn = async (matchId) => {
   if (!match) {
     return null
   }
+  if (!reroll) {
+    await db('matches')
+      .where('id', matchId)
+      .update({
+        turn: match.turn === 'host' ? 'guest' : 'host'
+      })
+      .returning('*')
+  }
 
-  await db('matches')
-    .where('id', matchId)
-    .update({
-      turn: match.turn === 'host' ? 'guest' : 'host'
-    })
-    .returning('*')
-
-  const socketIds = await getSockets([match.hostId, match.guestId])
+  // const socketIds = await getSockets([match.hostId, match.guestId])
+  const hostSocket = await getSocketId(match.hostId)
+  const guestSocket = await getSocketId(match.guestId)
 
   serverSocket.emit('server:turn-changed', {
-    socketIds
+    socketIds: [hostSocket, guestSocket],
+    turn: match.turn === 'host' ? 'guest' : 'host',
+    toAnimation: animationData?.toAnimation,
+    fromAnimation: animationData?.fromAnimation,
+    toAnimationSteps: animationData?.toAnimationSteps,
+    color: animationData?.color
   })
 
   return true
@@ -178,6 +194,9 @@ const moveToken = async (matchId, userId, from, steps) => {
   let guestTokensHome = match.guestTokensHome
   let hostTokensReached = match.hostTokensReached
   let guestTokensReached = match.guestTokensReached
+  let toAnimation = from
+  let toAnimationSteps = []
+  let fromAnimation = from
 
   let reroll = false
 
@@ -186,6 +205,7 @@ const moveToken = async (matchId, userId, from, steps) => {
       hostBoardData[2][3 - (steps - 1)].token = match.hostColor
       guestBoardData[0][3 - (steps - 1)].token = match.hostColor
       hostTokensHome--
+      toAnimation = `0,${3 - (steps - 1)}`
 
       if (hostBoardData[2][3 - (steps - 1)].tileType === 'shield') {
         reroll = true
@@ -195,8 +215,8 @@ const moveToken = async (matchId, userId, from, steps) => {
     if (match.turn === 'guest' && userId === match.guestId) {
       hostBoardData[0][3 - (steps - 1)].token = match.guestColor
       guestBoardData[2][3 - (steps - 1)].token = match.guestColor
-
       guestTokensHome--
+      toAnimation = `0,${3 - (steps - 1)}`
 
       if (guestBoardData[2][3 - (steps - 1)].tileType === 'shield') {
         reroll = true
@@ -211,25 +231,30 @@ const moveToken = async (matchId, userId, from, steps) => {
     let toRow = fromRow
     let toCol = fromCol
     const stepsArray = new Array(steps).fill(1)
+    fromAnimation = `${translateBoardRow(fromRow)},${fromCol}`
 
     stepsArray.forEach((step, i) => {
       if (board[toRow][toCol].nextTile === 'up') {
         toRow = toRow + step
+        toAnimationSteps.push(`${translateBoardRow(toRow)},${toCol}`)
         return
       }
 
       if (board[toRow][toCol].nextTile === 'down') {
         toRow = toRow - step
+        toAnimationSteps.push(`${translateBoardRow(toRow)},${toCol}`)
         return
       }
 
       if (board[toRow][toCol].nextTile === 'left') {
         toCol = toCol - step
+        toAnimationSteps.push(`${translateBoardRow(toRow)},${toCol}`)
         return
       }
 
       if (board[toRow][toCol].nextTile === 'right') {
         toCol = toCol + step
+        toAnimationSteps.push(`${translateBoardRow(toRow)},${toCol}`)
         return
       }
     })
@@ -246,6 +271,7 @@ const moveToken = async (matchId, userId, from, steps) => {
           hostBoardData[toRow][toCol].token = match.hostColor
           guestBoardData[translateBoardRow(toRow)][toCol].token =
             match.hostColor
+          toAnimation = `${translateBoardRow(toRow)},${toCol}`
         }
 
         if (board[toRow][toCol].tileType === 'shield') {
@@ -263,6 +289,7 @@ const moveToken = async (matchId, userId, from, steps) => {
           guestBoardData[toRow][toCol].token = match.guestColor
           hostBoardData[translateBoardRow(toRow)][toCol].token =
             match.guestColor
+          toAnimation = `${translateBoardRow(toRow)},${toCol}`
         }
 
         if (board[toRow][toCol].tileType === 'shield') {
@@ -286,6 +313,7 @@ const moveToken = async (matchId, userId, from, steps) => {
         guestBoardData[translateBoardRow(fromRow)][fromCol].token = null
         hostBoardData[toRow][toCol].token = match.hostColor
         guestBoardData[translateBoardRow(toRow)][toCol].token = match.hostColor
+        toAnimation = `${translateBoardRow(toRow)},${toCol}`
       }
 
       if (match.turn === 'guest' && userId === match.guestId) {
@@ -297,6 +325,7 @@ const moveToken = async (matchId, userId, from, steps) => {
         hostBoardData[translateBoardRow(fromRow)][fromCol].token = null
         guestBoardData[toRow][toCol].token = match.guestColor
         hostBoardData[translateBoardRow(toRow)][toCol].token = match.guestColor
+        toAnimation = `${translateBoardRow(toRow)},${toCol}`
       }
     }
   }
@@ -328,28 +357,15 @@ const moveToken = async (matchId, userId, from, steps) => {
       socketIds: [hostSocketId, guestSocketId],
       winner
     })
-  } else if (reroll) {
-    serverSocket.emit('server:reroll', {
-      socketId: userId === match.hostId ? hostSocketId : guestSocketId
-    })
   } else {
     // end turn
-    await endTurn(matchId)
+    await endTurn(matchId, reroll, {
+      toAnimation,
+      fromAnimation,
+      toAnimationSteps,
+      color: match.turn === 'host' ? match.hostColor : match.guestColor
+    })
   }
-
-  // serverSocket.emit('server:move-host', {
-  //   socketId: hostSocketId,
-  //   from,
-  //   to,
-  //   steps
-  // })
-
-  // serverSocket.emit('server:move-guest', {
-  //   socketId: guestSocketId,
-  //   from,
-  //   to,
-  //   steps
-  // })
 
   return true
 }
@@ -383,7 +399,6 @@ const reset = async (matchId, userId) => {
     [match.hostId, match.guestId].filter((id) => id !== userId)
   )
 
-  console.log(socketIds)
   serverSocket.emit('server:reset', {
     socketIds
   })

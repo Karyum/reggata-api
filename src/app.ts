@@ -62,7 +62,8 @@ app.set('trust proxy', 1)
 app.use(
   cors({
     origin: ['http://localhost:3000', 'https://reggata-client.vercel.app'],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200
   })
 )
 // limit amount of requests per minute to avoid DDoS

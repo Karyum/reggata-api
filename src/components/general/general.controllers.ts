@@ -20,7 +20,7 @@ const connect = catchAsync(async (req: Req, res: Res) => {
 
   return res.send({
     status: 'success',
-    token: (req.token && req.token[0]) || ''
+    authtoken: (req.token && req.token[0]) || ''
   })
 })
 
@@ -56,7 +56,7 @@ const getBoard = catchAsync(async (req: Req, res: Res) => {
   const { matchId } = req.params
   const user = req.session.user
 
-  const board = await generalService.getBoard(matchId, user.id)
+  const board = await generalService.getBoard(matchId, user?.id)
 
   res.send({
     status: 'success',
@@ -87,8 +87,6 @@ const flip = catchAsync(async (req: Req, res: Res) => {
   const { matchId } = req.params
   const { coins } = req.body
   const user = req.session.user
-
-  console.log('flip')
 
   const match = await generalService.getMatch(matchId)
 
