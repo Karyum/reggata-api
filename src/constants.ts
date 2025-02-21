@@ -40,7 +40,7 @@ export const initialBoard = [
     {
       nextTile: 'right'
     },
-    { tileType: 'splitter' }
+    { nextTile: 'up' }
   ],
   [
     {

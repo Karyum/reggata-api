@@ -21,6 +21,7 @@ const createMatch = async (color: string, hostId) => {
       guest_color: colors.find((c) => c !== color),
       host_id: hostId,
       board_data: JSON.stringify(initialBoard),
+      guest_board_data: JSON.stringify(initialBoard),
       turn: 'host'
     })
     .returning('*')
@@ -35,6 +36,10 @@ const getMatch = async (id) => {
       id: 'id',
       hostColor: 'host_color',
       guestColor: 'guest_color',
+      hostTokensHome: 'host_tokens_home',
+      guestTokensHome: 'guest_tokens_home',
+      hostTokensReached: 'host_tokens_reached',
+      guestTokensReached: 'guest_tokens_reached',
       hostId: 'host_id',
       guestId: 'guest_id',
       turn: 'turn'
@@ -44,10 +49,34 @@ const getMatch = async (id) => {
   return match
 }
 
+const getBoard = async (id, userId) => {
+  const match = await db('matches')
+    .where('id', id)
+    .columns({
+      hostId: 'host_id',
+      guestId: 'guest_id',
+      hostBoardData: 'board_data',
+      guestBoardData: 'guest_board_data'
+    })
+    .first()
+
+  if (!match) {
+    return null
+  }
+
+  if (userId === match.hostId) {
+    return match.hostBoardData
+  } else if (userId === match.guestId) {
+    return match.guestBoardData
+  }
+
+  return null
+}
+
 const joinMatch = async (id, guestId) => {
   const match = await db('matches')
     .where('id', id)
-    .where('guest_id', null)
+    .andWhere('guest_id', null)
     .columns({
       hostId: 'host_id'
     })
@@ -57,21 +86,307 @@ const joinMatch = async (id, guestId) => {
     return null
   }
 
-  //   const updatedMatch = await db('matches')
-  //     .where('id', id)
-  //     .update({
-  //       guest_id: guestId
-  //     })
-  //     .returning('*')
+  const updatedMatch = await db('matches')
+    .where('id', id)
+    .update({
+      guest_id: guestId
+    })
+    .returning('*')
 
   // get host socket
-  const hostSession = await db('sessions')
-    .whereRaw(`cast(session -> 'user' ->> 'id' as uuid) = ?`, [match.hostId])
+  const hostSocketId = await getSocketId(match.hostId)
+
+  serverSocket.emit('server:match-joined', {
+    socketId: hostSocketId
+  })
+
+  return id
+}
+
+const getSocketId = async (userId) => {
+  const session = await db('sessions')
+    .whereRaw(`cast(sess -> 'user' ->> 'id' as uuid) = ?`, [userId])
     .first()
 
-  console.log(hostSession)
+  return session.sess.user.socketId
+}
 
-  // serverSocket.emit('match-joined', {
+const getSockets = async (userIds) => {
+  const sessions = await db('sessions')
+    .whereRaw(`cast(sess -> 'user' ->> 'id' as uuid) = ANY(?)`, [userIds])
+    .select()
+
+  return sessions.map((session) => session.sess.user.socketId)
+}
+
+const endTurn = async (matchId) => {
+  const match = await db('matches')
+    .where('id', matchId)
+    .columns({
+      hostId: 'host_id',
+      guestId: 'guest_id',
+      turn: 'turn'
+    })
+    .first()
+
+  if (!match) {
+    return null
+  }
+
+  await db('matches')
+    .where('id', matchId)
+    .update({
+      turn: match.turn === 'host' ? 'guest' : 'host'
+    })
+    .returning('*')
+
+  const socketIds = await getSockets([match.hostId, match.guestId])
+
+  serverSocket.emit('server:turn-changed', {
+    socketIds
+  })
+
+  return true
+}
+
+const moveToken = async (matchId, userId, from, steps) => {
+  const match = await db('matches')
+    .where('id', matchId)
+    .columns({
+      hostBoardData: 'board_data',
+      guestBoardData: 'guest_board_data',
+      hostId: 'host_id',
+      guestId: 'guest_id',
+      hostColor: 'host_color',
+      guestColor: 'guest_color',
+      hostTokensHome: 'host_tokens_home',
+      guestTokensHome: 'guest_tokens_home',
+      hostTokensReached: 'host_tokens_reached',
+      guestTokensReached: 'guest_tokens_reached',
+      turn: 'turn'
+    })
+    .first()
+
+  if (!match) {
+    return null
+  }
+
+  const hostBoardData = match.hostBoardData
+  const guestBoardData = match.guestBoardData
+
+  let hostTokensHome = match.hostTokensHome
+  let guestTokensHome = match.guestTokensHome
+  let hostTokensReached = match.hostTokensReached
+  let guestTokensReached = match.guestTokensReached
+
+  let reroll = false
+
+  if (from === 'home') {
+    if (match.turn === 'host' && userId === match.hostId) {
+      hostBoardData[2][3 - (steps - 1)].token = match.hostColor
+      guestBoardData[0][3 - (steps - 1)].token = match.hostColor
+      hostTokensHome--
+
+      if (hostBoardData[2][3 - (steps - 1)].tileType === 'shield') {
+        reroll = true
+      }
+    }
+
+    if (match.turn === 'guest' && userId === match.guestId) {
+      hostBoardData[0][3 - (steps - 1)].token = match.guestColor
+      guestBoardData[2][3 - (steps - 1)].token = match.guestColor
+
+      guestTokensHome--
+
+      if (guestBoardData[2][3 - (steps - 1)].tileType === 'shield') {
+        reroll = true
+      }
+    }
+  } else {
+    const board = userId === match.hostId ? hostBoardData : guestBoardData
+
+    const [fromRow, fromCol] = from.split(',').map((x) => parseInt(x))
+
+    // find destination through the steps
+    let toRow = fromRow
+    let toCol = fromCol
+    const stepsArray = new Array(steps).fill(1)
+
+    stepsArray.forEach((step, i) => {
+      if (board[toRow][toCol].nextTile === 'up') {
+        toRow = toRow + step
+        return
+      }
+
+      if (board[toRow][toCol].nextTile === 'down') {
+        toRow = toRow - step
+        return
+      }
+
+      if (board[toRow][toCol].nextTile === 'left') {
+        toCol = toCol - step
+        return
+      }
+
+      if (board[toRow][toCol].nextTile === 'right') {
+        toCol = toCol + step
+        return
+      }
+    })
+
+    // If there is no token in the destination, move the token
+    if (!board[toRow][toCol].token) {
+      if (match.turn === 'host' && userId === match.hostId) {
+        hostBoardData[fromRow][fromCol].token = null
+        guestBoardData[translateBoardRow(fromRow)][fromCol].token = null
+
+        if (hostBoardData[toRow][toCol].tileType === 'finish') {
+          hostTokensReached++
+        } else {
+          hostBoardData[toRow][toCol].token = match.hostColor
+          guestBoardData[translateBoardRow(toRow)][toCol].token =
+            match.hostColor
+        }
+
+        if (board[toRow][toCol].tileType === 'shield') {
+          reroll = true
+        }
+      }
+
+      if (match.turn === 'guest' && userId === match.guestId) {
+        guestBoardData[fromRow][fromCol].token = null
+        hostBoardData[translateBoardRow(fromRow)][fromCol].token = null
+
+        if (guestBoardData[toRow][toCol].tileType === 'finish') {
+          guestTokensReached++
+        } else {
+          guestBoardData[toRow][toCol].token = match.guestColor
+          hostBoardData[translateBoardRow(toRow)][toCol].token =
+            match.guestColor
+        }
+
+        if (board[toRow][toCol].tileType === 'shield') {
+          reroll = true
+        }
+      }
+    }
+
+    // if there is a friendly token we will assume that the frontend checker would not allow this move
+    // so if it reaches the API and there is a token, it must be an enemy token
+    // so we will remove the enemy token, and move the token
+    if (board[toRow][toCol].token) {
+      if (match.turn === 'host' && userId === match.hostId) {
+        // if the token is not the same color as the host, then it is the guest's token
+        // so return the token to the guest's home
+        if (hostBoardData[toRow][toCol].token !== match.hostColor) {
+          guestTokensHome++
+        }
+
+        hostBoardData[fromRow][fromCol].token = null
+        guestBoardData[translateBoardRow(fromRow)][fromCol].token = null
+        hostBoardData[toRow][toCol].token = match.hostColor
+        guestBoardData[translateBoardRow(toRow)][toCol].token = match.hostColor
+      }
+
+      if (match.turn === 'guest' && userId === match.guestId) {
+        if (guestBoardData[toRow][toCol].token !== match.guestColor) {
+          hostTokensHome++
+        }
+
+        guestBoardData[fromRow][fromCol].token = null
+        hostBoardData[translateBoardRow(fromRow)][fromCol].token = null
+        guestBoardData[toRow][toCol].token = match.guestColor
+        hostBoardData[translateBoardRow(toRow)][toCol].token = match.guestColor
+      }
+    }
+  }
+
+  let winner = null
+
+  await db('matches')
+    .where('id', matchId)
+    .update({
+      board_data: JSON.stringify(hostBoardData),
+      guest_board_data: JSON.stringify(guestBoardData),
+      host_tokens_home: hostTokensHome,
+      guest_tokens_home: guestTokensHome,
+      host_tokens_reached: hostTokensReached,
+      guest_tokens_reached: guestTokensReached
+    })
+
+  if (hostTokensReached === 1) {
+    winner = match.hostColor
+  } else if (guestTokensReached === 1) {
+    winner = match.guestColor
+  }
+
+  const hostSocketId = await getSocketId(match.hostId)
+  const guestSocketId = await getSocketId(match.guestId)
+
+  if (winner) {
+    serverSocket.emit('server:winner', {
+      socketIds: [hostSocketId, guestSocketId],
+      winner
+    })
+  } else if (reroll) {
+    serverSocket.emit('server:reroll', {
+      socketId: userId === match.hostId ? hostSocketId : guestSocketId
+    })
+  } else {
+    // end turn
+    await endTurn(matchId)
+  }
+
+  // serverSocket.emit('server:move-host', {
+  //   socketId: hostSocketId,
+  //   from,
+  //   to,
+  //   steps
+  // })
+
+  // serverSocket.emit('server:move-guest', {
+  //   socketId: guestSocketId,
+  //   from,
+  //   to,
+  //   steps
+  // })
+
+  return true
+}
+
+const reset = async (matchId, userId) => {
+  const match = await db('matches')
+    .where('id', matchId)
+    .columns({
+      hostId: 'host_id',
+      guestId: 'guest_id'
+    })
+    .first()
+
+  if (!match) {
+    return null
+  }
+
+  await db('matches')
+    .where('id', matchId)
+    .update({
+      board_data: JSON.stringify(initialBoard),
+      guest_board_data: JSON.stringify(initialBoard),
+      turn: 'host',
+      host_tokens_home: 1,
+      guest_tokens_home: 1,
+      host_tokens_reached: 0,
+      guest_tokens_reached: 0
+    })
+
+  const socketIds = await getSockets(
+    [match.hostId, match.guestId].filter((id) => id !== userId)
+  )
+
+  console.log(socketIds)
+  serverSocket.emit('server:reset', {
+    socketIds
+  })
 
   return true
 }
@@ -79,5 +394,26 @@ const joinMatch = async (id, guestId) => {
 export default {
   createMatch,
   getMatch,
-  joinMatch
+  joinMatch,
+  getSocketId,
+  endTurn,
+  moveToken,
+  getBoard,
+  reset
+}
+
+const translateBoardRow = (row) => {
+  if (row === 0) {
+    return 2
+  }
+
+  if (row === 1) {
+    return 1
+  }
+
+  if (row === 2) {
+    return 0
+  }
+
+  return row
 }
