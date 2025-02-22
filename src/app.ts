@@ -57,7 +57,7 @@ export const serverSocket = io(selfUrl, {
   }
 })
 
-app.set('trust proxy', 1)
+// app.set('trust proxy', 1)
 
 app.use(
   cors({
