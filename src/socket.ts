@@ -39,6 +39,7 @@ export default (io) => {
       (data: {
         socketIds: string[]
         turn: string
+        winner: string
         toAnimation: string
         fromAnimation: string
         toAnimationSteps: string[]
@@ -50,7 +51,8 @@ export default (io) => {
               toAnimation: data.toAnimation,
               fromAnimation: data.fromAnimation,
               toAnimationSteps: data.toAnimationSteps,
-              color: data.color
+              color: data.color,
+              winner: data.winner
             })
             return
           }
@@ -60,12 +62,15 @@ export default (io) => {
               toAnimation: data.toAnimation,
               fromAnimation: data.fromAnimation,
               toAnimationSteps: data.toAnimationSteps,
-              color: data.color
+              color: data.color,
+              winner: data.winner
             })
             return
           }
 
-          io.to(socketId).emit('client:turn-changed')
+          io.to(socketId).emit('client:turn-changed', {
+            winner: data.winner
+          })
         })
       }
     )

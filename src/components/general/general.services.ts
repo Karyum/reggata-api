@@ -23,8 +23,8 @@ const createMatch = async (color: string, hostId: string) => {
       board_data: JSON.stringify(initialBoard),
       guest_board_data: JSON.stringify(initialBoard),
       turn: 'host',
-      host_tokens_home: 1,
-      guest_tokens_home: 1,
+      host_tokens_home: 2,
+      guest_tokens_home: 2,
       host_tokens_reached: 0,
       guest_tokens_reached: 0
     })
@@ -90,7 +90,7 @@ const joinMatch = async (id, guestId) => {
     return null
   }
 
-  const updatedMatch = await db('matches')
+  await db('matches')
     .where('id', id)
     .update({
       guest_id: guestId
@@ -126,6 +126,7 @@ const getSockets = async (userIds) => {
 const endTurn = async (
   matchId,
   reroll: boolean = false,
+  winner: string = null,
   animationData?: any
 ) => {
   const match = await db('matches')
@@ -140,6 +141,7 @@ const endTurn = async (
   if (!match) {
     return null
   }
+
   if (!reroll) {
     await db('matches')
       .where('id', matchId)
@@ -156,6 +158,7 @@ const endTurn = async (
   serverSocket.emit('server:turn-changed', {
     socketIds: [hostSocket, guestSocket],
     turn: match.turn === 'host' ? 'guest' : 'host',
+    winner,
     toAnimation: animationData?.toAnimation,
     fromAnimation: animationData?.fromAnimation,
     toAnimationSteps: animationData?.toAnimationSteps,
@@ -349,23 +352,13 @@ const moveToken = async (matchId, userId, from, steps) => {
     winner = match.guestColor
   }
 
-  const hostSocketId = await getSocketId(match.hostId)
-  const guestSocketId = await getSocketId(match.guestId)
-
-  if (winner) {
-    serverSocket.emit('server:winner', {
-      socketIds: [hostSocketId, guestSocketId],
-      winner
-    })
-  } else {
-    // end turn
-    await endTurn(matchId, reroll, {
-      toAnimation,
-      fromAnimation,
-      toAnimationSteps,
-      color: match.turn === 'host' ? match.hostColor : match.guestColor
-    })
-  }
+  // end turn
+  await endTurn(matchId, reroll, winner, {
+    toAnimation,
+    fromAnimation,
+    toAnimationSteps,
+    color: match.turn === 'host' ? match.hostColor : match.guestColor
+  })
 
   return true
 }
@@ -389,8 +382,8 @@ const reset = async (matchId, userId) => {
       board_data: JSON.stringify(initialBoard),
       guest_board_data: JSON.stringify(initialBoard),
       turn: 'host',
-      host_tokens_home: 1,
-      guest_tokens_home: 1,
+      host_tokens_home: 2,
+      guest_tokens_home: 2,
       host_tokens_reached: 0,
       guest_tokens_reached: 0
     })
