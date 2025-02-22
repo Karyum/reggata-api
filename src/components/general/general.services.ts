@@ -162,7 +162,8 @@ const endTurn = async (
     toAnimation: animationData?.toAnimation,
     fromAnimation: animationData?.fromAnimation,
     toAnimationSteps: animationData?.toAnimationSteps,
-    color: animationData?.color
+    color: animationData?.color,
+    homeTotal: animationData?.homeTotal
   })
 
   return true
@@ -200,6 +201,7 @@ const moveToken = async (matchId, userId, from, steps) => {
   let toAnimation = from
   let toAnimationSteps = []
   let fromAnimation = from
+  let homeTotal = match.turn === 'host' ? hostTokensHome : guestTokensHome
 
   let reroll = false
 
@@ -357,7 +359,8 @@ const moveToken = async (matchId, userId, from, steps) => {
     toAnimation,
     fromAnimation,
     toAnimationSteps,
-    color: match.turn === 'host' ? match.hostColor : match.guestColor
+    color: match.turn === 'host' ? match.hostColor : match.guestColor,
+    homeTotal
   })
 
   return true

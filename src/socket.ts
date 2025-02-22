@@ -44,6 +44,7 @@ export default (io) => {
         fromAnimation: string
         toAnimationSteps: string[]
         color: string
+        homeTotal: number
       }) => {
         data.socketIds.forEach((socketId, i) => {
           if (i === 0 && data.turn === 'host') {
@@ -52,7 +53,8 @@ export default (io) => {
               fromAnimation: data.fromAnimation,
               toAnimationSteps: data.toAnimationSteps,
               color: data.color,
-              winner: data.winner
+              winner: data.winner,
+              homeTotal: data.homeTotal
             })
             return
           }
@@ -63,7 +65,8 @@ export default (io) => {
               fromAnimation: data.fromAnimation,
               toAnimationSteps: data.toAnimationSteps,
               color: data.color,
-              winner: data.winner
+              winner: data.winner,
+              homeTotal: data.homeTotal
             })
             return
           }
