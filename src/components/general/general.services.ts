@@ -348,9 +348,9 @@ const moveToken = async (matchId, userId, from, steps) => {
       guest_tokens_reached: guestTokensReached
     })
 
-  if (hostTokensReached === 1) {
+  if (hostTokensReached === 2) {
     winner = match.hostColor
-  } else if (guestTokensReached === 1) {
+  } else if (guestTokensReached === 2) {
     winner = match.guestColor
   }
 
