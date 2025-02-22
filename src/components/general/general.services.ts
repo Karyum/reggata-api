@@ -23,8 +23,8 @@ const createMatch = async (color: string, hostId: string) => {
       board_data: JSON.stringify(initialBoard),
       guest_board_data: JSON.stringify(initialBoard),
       turn: 'host',
-      host_tokens_home: 2,
-      guest_tokens_home: 2,
+      host_tokens_home: 4,
+      guest_tokens_home: 4,
       host_tokens_reached: 0,
       guest_tokens_reached: 0
     })
@@ -348,9 +348,9 @@ const moveToken = async (matchId, userId, from, steps) => {
       guest_tokens_reached: guestTokensReached
     })
 
-  if (hostTokensReached === 2) {
+  if (hostTokensReached === 4) {
     winner = match.hostColor
-  } else if (guestTokensReached === 2) {
+  } else if (guestTokensReached === 4) {
     winner = match.guestColor
   }
 
@@ -385,8 +385,8 @@ const reset = async (matchId, userId) => {
       board_data: JSON.stringify(initialBoard),
       guest_board_data: JSON.stringify(initialBoard),
       turn: 'host',
-      host_tokens_home: 2,
-      guest_tokens_home: 2,
+      host_tokens_home: 4,
+      guest_tokens_home: 4,
       host_tokens_reached: 0,
       guest_tokens_reached: 0
     })
