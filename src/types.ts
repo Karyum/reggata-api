@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express'
+import { Application, NextFunction, Request, Response } from 'express'
 export interface ISessionObj {
   id?: string
   socketId?: string
@@ -9,6 +9,10 @@ export interface Req extends Request {
   session: {
     user: ISessionObj
     destroy?: Function
+  }
+
+  app: Application & {
+    io: any
   }
 }
 

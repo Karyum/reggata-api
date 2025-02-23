@@ -19,7 +19,7 @@ import { environment, isDev, selfUrl } from './config'
 import { io } from 'socket.io-client'
 import logger from './utils/logger'
 
-const app = express()
+const app = express() as any
 const server = http.createServer(app)
 export const socket = require('socket.io')(server)
 
@@ -49,13 +49,9 @@ const wrap = (middleware) => (socket, next) => {
 
 socket.use(wrap(sessionMiddleware))
 
-socketManager(socket)
+export const serverSocket = socketManager(socket)
 
-export const serverSocket = io(selfUrl, {
-  query: {
-    isServer: true
-  }
-})
+app.io = serverSocket
 
 // app.set('trust proxy', 1)
 

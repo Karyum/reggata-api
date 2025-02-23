@@ -100,11 +100,9 @@ const joinMatch = async (id, guestId) => {
   // get host socket
   const hostSocketId = await getSocketId(match.hostId)
 
-  serverSocket.emit('server:match-joined', {
+  return {
     socketId: hostSocketId
-  })
-
-  return id
+  }
 }
 
 const getSocketId = async (userId) => {
@@ -155,16 +153,34 @@ const endTurn = async (
   const hostSocket = await getSocketId(match.hostId)
   const guestSocket = await getSocketId(match.guestId)
 
-  serverSocket.emit('server:turn-changed', {
-    socketIds: [hostSocket, guestSocket],
-    turn: match.turn === 'host' ? 'guest' : 'host',
-    winner,
-    toAnimation: animationData?.toAnimation,
-    fromAnimation: animationData?.fromAnimation,
-    toAnimationSteps: animationData?.toAnimationSteps,
-    color: animationData?.color,
-    homeTotal: animationData?.homeTotal
-  })
+  const currentTurn = match.turn === 'host' ? 'guest' : 'host'
+  if (currentTurn === 'host') {
+    serverSocket.to(hostSocket).emit('client:turn-changed', {
+      toAnimation: animationData?.toAnimation,
+      fromAnimation: animationData?.fromAnimation,
+      toAnimationSteps: animationData?.toAnimationSteps,
+      color: animationData?.color,
+      winner: winner,
+      homeTotal: animationData?.homeTotal
+    })
+  }
+
+  if (currentTurn === 'guest') {
+    serverSocket.to(guestSocket).emit('client:turn-changed', {
+      toAnimation: animationData?.toAnimation,
+      fromAnimation: animationData?.fromAnimation,
+      toAnimationSteps: animationData?.toAnimationSteps,
+      color: animationData?.color,
+      winner: winner,
+      homeTotal: animationData?.homeTotal
+    })
+  }
+
+  serverSocket
+    .to(currentTurn === 'host' ? guestSocket : hostSocket)
+    .emit('client:turn-changed', {
+      winner
+    })
 
   return true
 }
@@ -395,11 +411,9 @@ const reset = async (matchId, userId) => {
     [match.hostId, match.guestId].filter((id) => id !== userId)
   )
 
-  serverSocket.emit('server:reset', {
+  return {
     socketIds
-  })
-
-  return true
+  }
 }
 
 export default {

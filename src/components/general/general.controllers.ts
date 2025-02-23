@@ -2,7 +2,6 @@ import { Req, Res } from '@/types'
 import catchAsync from '@/utils/catchAsync'
 import generalService from './general.services'
 import { v4 as uuidv4 } from 'uuid'
-import { serverSocket } from '@/app'
 
 const testSocket = catchAsync(async (req: Req, res: Res) => {
   res.send({ a: 'test' })
@@ -84,6 +83,8 @@ const joinMatch = catchAsync(async (req: Req, res: Res) => {
     })
   }
 
+  req.app.io.to(match.socketId).emit('client:match-joined')
+
   return res.send({
     status: 'success',
     matchId: id
@@ -107,17 +108,16 @@ const flip = catchAsync(async (req: Req, res: Res) => {
   if (match.hostId === user.id && match.turn !== 'guest') {
     const socketId = await generalService.getSocketId(match.guestId)
 
-    serverSocket.emit('server:flip', {
-      coins,
-      socketId
+    req.app.io.to(socketId).emit('client:flip', {
+      coins
     })
   }
 
   if (match.guestId === user.id && match.turn !== 'host') {
     const socketId = await generalService.getSocketId(match.hostId)
-    serverSocket.emit('server:flip', {
-      coins,
-      socketId
+
+    req.app.io.to(socketId).emit('client:flip', {
+      coins
     })
   }
 
@@ -157,7 +157,11 @@ const reset = catchAsync(async (req: Req, res: Res) => {
   const { matchId } = req.params
   const user = req.session.user
 
-  await generalService.reset(matchId, user.id)
+  const data = await generalService.reset(matchId, user.id)
+
+  data.socketIds.forEach((socketId, i) => {
+    req.app.io.to(socketId).emit('client:reset')
+  })
 
   return res.send({
     status: 'success'
